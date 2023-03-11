@@ -3,7 +3,7 @@ DATA_FILE = 'data/SingaporeWeather.csv'
 TEMP_FOLDER = 'temp'
 ARCHIVE_FOLDER = 'archive'
 RESULTS_FOLDER = 'results'
-MAX_FILE_LINE = 100000
+MAX_FILE_LINE = 50000
 mapper = {
     'Station': {
         'Changi': '0',
