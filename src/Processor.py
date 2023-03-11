@@ -69,7 +69,7 @@ class Processor:
             folder = f'{ARCHIVE_FOLDER}/Timestamp'
             if not os.path.exists(folder):
                 os.makedirs(folder)
-            new_file_path = f'{folder}/{filename}'
+            new_file_path = f'{folder}/{filename}.txt'
             os.rename(file, new_file_path)
         return
 
