@@ -6,7 +6,7 @@ from project_config import (
 # from functools import reduce
 from datetime import datetime
 from typing import List
-from os import listdir, rename
+import os
 
 
 class Processor:
@@ -48,7 +48,8 @@ class Processor:
 
     def process_location(self) -> None:
         """Iterates through files in temp folder and filters and stores indexes"""
-        current_files = ['/'.join([TEMP_FOLDER, f]) for f in listdir(TEMP_FOLDER)]
+        current_files = ['/'.join([TEMP_FOLDER, f])
+                         for f in os.listdir(TEMP_FOLDER)]
         with open(f'{SPLIT_DATA_FOLDER}/Station.txt', 'r') as f:
             station_data = f.read().splitlines()
         for file in current_files:
@@ -65,8 +66,11 @@ class Processor:
                 for i in station_ok:
                     f.write(f'{i}\n')
             # move timestamp temp file to archive
-            new_file_path = f'{ARCHIVE_FOLDER}/{filename}'
-            rename(file, new_file_path)
+            folder = f'{ARCHIVE_FOLDER}/Timestamp'
+            if not os.path.exists(folder):
+                os.makedirs(folder)
+            new_file_path = f'{folder}/{filename}'
+            os.rename(file, new_file_path)
         return
 
 
