@@ -21,7 +21,7 @@ def get_columns(data_file: str) -> List:
 def split_columns(data_file: str, zone_maps: Dict) -> None:
     """Splits the large csv into individual columns in their own files"""
     columns = get_columns(data_file=data_file)
-    recreate_folders([SPLIT_DATA_FOLDER])
+    recreate_folders(folders=[SPLIT_DATA_FOLDER])
     opened_files = []
     with open(data_file, 'r') as f:
         next(f)
@@ -60,8 +60,8 @@ def split_columns(data_file: str, zone_maps: Dict) -> None:
     return zone_maps
 
 
-def recreate_folders(folder_name_list: List[str]) -> None:
-    for folder in folder_name_list:
+def recreate_folders(folders: List[str]) -> None:
+    for folder in folders:
         if os.path.exists(folder) and os.path.isdir(folder):
             shutil.rmtree(folder)
         os.makedirs(folder)
@@ -105,10 +105,7 @@ def process_data(
 ) -> None:
     """Uses required years and location to churn out a resulting csv"""
     folders = [TEMP_FOLDER, ARCHIVE_FOLDER, RESULTS_FOLDER]
-    for folder in folders:
-        if os.path.exists(folder) and os.path.isdir(folder):
-            shutil.rmtree(folder)
-        os.makedirs(folder)
+    recreate_folders(folders=folders)
     processor = Processor(
         required_years=required_years,
         location=location,
