@@ -1,0 +1,9 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+      - id: trailing-whitespace
+  - repo: https://github.com/pycqa/flake8
+    rev: "" # pick a git hash / tag to point to
+    hooks:
+      - id: flake8
