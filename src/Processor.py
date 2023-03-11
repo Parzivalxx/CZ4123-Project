@@ -89,7 +89,8 @@ class Processor:
         for zone in self.zone_maps['Timestamp'].keys():
             with open(f'{SPLIT_DATA_FOLDER}/Station_{zone}.txt', 'r') as f:
                 station_data = f.read().splitlines()
-                jump = MAX_FILE_LINE * zone
+                range_min = MAX_FILE_LINE * zone
+                range_max = range_min + len(station_data) - 1
             for file in current_files:
                 filename = file.split('/')[-1]
                 underscore_idx = filename.find('_')
@@ -100,9 +101,12 @@ class Processor:
                 # will read in a list of indexes
                 with open(file, 'r') as f:
                     timestamp_data = list(map(int, f.read().splitlines()))
+                # if no overlap between zone and indexes, skip to next file
+                if min(timestamp_data) > range_max or max(timestamp_data) < range_min:
+                    continue
                 station_ok = [idx for idx in timestamp_data
-                              if idx in range(jump, jump + len(station_data))
-                              if station_data[idx - jump] == self.location]
+                              if idx in range(range_min, range_max + 1)
+                              if station_data[idx - range_min] == self.location]
                 with open(f'{TEMP_FOLDER}/Station_{remainder}', 'a') as f:
                     for idx in station_ok:
                         f.write(f'{idx}\n')
