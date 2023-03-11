@@ -1,7 +1,8 @@
 SPLIT_DATA_FOLDER = 'split_data'
 DATA_FILE = 'data/SingaporeWeather.csv'
-TEMP_RESULTS_FOLDER = 'temp'
-FINAL_RESULTS_FOLDER = 'final_results'
+TEMP_FOLDER = 'temp'
+ARCHIVE_FOLDER = 'archive'
+RESULTS_FOLDER = 'results'
 MAX_FILE_LINE = 100000
 mapper = {
     'Station': {

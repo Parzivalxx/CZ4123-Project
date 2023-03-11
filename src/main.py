@@ -1,8 +1,12 @@
 import os
+import shutil
 from project_config import (
     SPLIT_DATA_FOLDER,
     DATA_FILE,
-    TEMP_RESULTS_FOLDER
+    TEMP_FOLDER,
+    ARCHIVE_FOLDER,
+    RESULTS_FOLDER,
+    mapper
 )
 from typing import List
 from Processor import Processor
@@ -23,7 +27,9 @@ def split_columns(data_file: str) -> None:
         next(f)
         for line in f:
             content = line.rstrip().split(',')
-            for file, c in zip(opened_files, content):
+            for file, c, col in zip(opened_files, content, columns):
+                if col in mapper:
+                    c = mapper[col][c]
                 file.write(c + '\n')
     for file in opened_files:
         file.close()
@@ -32,13 +38,17 @@ def split_columns(data_file: str) -> None:
 
 def process_data(required_years: str, location: str) -> None:
     """Uses required years and location to churn out a resulting csv"""
-    if not os.path.exists(TEMP_RESULTS_FOLDER):
-        os.makedirs(TEMP_RESULTS_FOLDER)
+    folders = [TEMP_FOLDER, ARCHIVE_FOLDER, RESULTS_FOLDER]
+    for folder in folders:
+        if os.path.exists(folder) and os.path.isdir(folder):
+            shutil.rmtree(folder)
+        os.makedirs(folder)
     processor = Processor(
         required_years=required_years,
         location=location
     )
     processor.process_month_and_year()
+    processor.process_location()
 
 
 def main() -> None:
@@ -69,12 +79,12 @@ def main() -> None:
         if location % 2:
             process_data(
                 required_years=required_years,
-                location='Paya Lebar'
+                location='1'
             )
         else:
             process_data(
                 required_years=required_years,
-                location='Changi'
+                location='0'
             )
 
 
