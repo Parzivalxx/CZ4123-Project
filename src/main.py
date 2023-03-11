@@ -7,6 +7,7 @@ from project_config import (
 from typing import List
 from Processor import Processor
 
+
 def get_columns(data_file: str) -> List:
     """Gets header columns in file"""
     return open(data_file, 'r').readline().rstrip().split(',')
@@ -45,11 +46,7 @@ def main() -> None:
     print(f'Data file used: {DATA_FILE}')
     print(f'File Size is {os.stat(DATA_FILE).st_size / (1024 * 1024)} MB')
 
-    line_count = 0
-    with open(DATA_FILE, 'r') as f:
-        for _ in f:
-            line_count += 1
-
+    line_count = sum(1 for _ in open(DATA_FILE, 'r'))
     print(f'Number of Lines in the file is {line_count}')
 
     split_columns(data_file=DATA_FILE)
@@ -57,18 +54,19 @@ def main() -> None:
     while True:
         print()
         text = 'Enter your matriculation number for processing, c to cancel: '
-        matric_num = input(text)
+        matric_num = input(text).strip()
         if matric_num == 'c':
+            print('Have a good day, bye bye...')
             break
         try:
             if len(matric_num) != 9:
                 print('Invalid input, matriculation number is of length 9...')
                 continue
-            required_years, location = matric_num[-2], int(matric_num[-3]) % 2
-        except:
+            required_years, location = matric_num[-2], int(matric_num[-3])
+        except ValueError:
             print('Invalid input, please try again...')
             continue
-        if location == 1:
+        if location % 2:
             process_data(
                 required_years=required_years,
                 location='Paya Lebar'
@@ -78,7 +76,7 @@ def main() -> None:
                 required_years=required_years,
                 location='Changi'
             )
-    print('Have a good day, bye bye...')
+
 
 if __name__ == '__main__':
     main()
