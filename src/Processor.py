@@ -48,6 +48,8 @@ class Processor:
         opened_files: List,
         dt_to_check: str = None,
     ) -> None:
+        if zone > max(self.zone_maps['Timestamp'].keys()):
+            return
         with open(f'{SPLIT_DATA_FOLDER}/Timestamp_{zone}.txt', 'r') as f:
             lines = f.read().splitlines()
         lowest_idx = 0
