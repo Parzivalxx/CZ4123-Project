@@ -7,7 +7,8 @@ from project_config import (
     ARCHIVE_FOLDER,
     RESULTS_FOLDER,
     MAX_FILE_LINE,
-    mapper
+    MAPPER,
+    ZONE_MAP_COLS
 )
 from typing import List, Dict, Tuple
 from Processor import Processor
@@ -25,34 +26,33 @@ def split_columns(data_file: str, zone_maps: Dict) -> None:
     opened_files = []
     with open(data_file, 'r') as f:
         next(f)
-        curr_map_idx = 0
         min_max_dict = initialize_min_max_dict(zone_maps=zone_maps)
+        curr_zone = 0
         for i, line in enumerate(f):
             if i % MAX_FILE_LINE == 0:
                 if opened_files:
                     # store in map and reset min_max_dict
-                    zone_maps, min_max_dict, curr_map_idx = store_in_zone_map(
-                        curr_map_idx=curr_map_idx,
+                    zone_maps, min_max_dict = store_in_zone_map(
                         min_max_dict=min_max_dict,
                         zone_maps=zone_maps
                     )
                     close_files(opened_files=opened_files)
                 opened_files = [
-                    open(f'{SPLIT_DATA_FOLDER}/{col}_{curr_map_idx}.txt', 'w')
+                    open(f'{SPLIT_DATA_FOLDER}/{col}_{curr_zone}.txt', 'w')
                     for col in columns
                 ]
+                curr_zone += 1
             content = line.rstrip().split(',')
             for file, c, col in zip(opened_files, content, columns):
-                if col in mapper:
-                    c = mapper[col][c]
+                if col in MAPPER:
+                    c = MAPPER[col][c]
                 if col in zone_maps:
                     min_val, max_val = min_max_dict[col]
                     min_val = min(min_val, c)
                     max_val = max(max_val, c)
                     min_max_dict[col] = [min_val, max_val]
                 file.write(f'{c}\n')
-    zone_maps, min_max_dict, curr_map_idx = store_in_zone_map(
-        curr_map_idx=curr_map_idx,
+    zone_maps, min_max_dict = store_in_zone_map(
         min_max_dict=min_max_dict,
         zone_maps=zone_maps
     )
@@ -69,6 +69,7 @@ def recreate_folders(folders: List[str]) -> None:
 
 
 def initialize_min_max_dict(zone_maps: Dict) -> Dict:
+    """Initialize the dictionary that stores the min and max for each col zone"""
     min_date_str = '9999-01-01 00:00'
     max_date_str = '0001-01-01 00:00'
     min_max_dict = {
@@ -79,17 +80,16 @@ def initialize_min_max_dict(zone_maps: Dict) -> Dict:
 
 
 def store_in_zone_map(
-    curr_map_idx: int,
     min_max_dict: Dict,
     zone_maps: Dict
-) -> Tuple[Dict, Dict, int]:
+) -> Tuple[Dict, Dict]:
+    """Store the current min and max in the zone map and reinitialize the min and max"""
     for col in zone_maps:
-        zone_maps[col][curr_map_idx] = min_max_dict[col]
+        zone_maps[col].append(tuple(min_max_dict[col]))
         min_date_str = '9999-01-01 00:00'
         max_date_str = '0001-01-01 00:00'
         min_max_dict[col] = [min_date_str, max_date_str]
-    curr_map_idx += 1
-    return zone_maps, min_max_dict, curr_map_idx
+    return zone_maps, min_max_dict
 
 
 def close_files(opened_files: List) -> None:
@@ -106,6 +106,7 @@ def process_data(
     """Uses required years and location to churn out a resulting csv"""
     folders = [TEMP_FOLDER, ARCHIVE_FOLDER, RESULTS_FOLDER]
     recreate_folders(folders=folders)
+    print('Processing data...')
     processor = Processor(
         required_years=required_years,
         location=location,
@@ -124,7 +125,8 @@ def main() -> None:
     print(f'Number of Lines in the file is {line_count}')
 
     zone_maps = {
-        'Timestamp': {}
+        col: []
+        for col in ZONE_MAP_COLS
     }
 
     zone_maps = split_columns(data_file=DATA_FILE, zone_maps=zone_maps)
@@ -140,7 +142,7 @@ def main() -> None:
             if len(matric_num) != 9:
                 print('Invalid input, matriculation number is of length 9...')
                 continue
-            required_years, location = matric_num[-2], int(matric_num[-3])
+            required_years, location = int(matric_num[-2]), int(matric_num[-3])
         except ValueError:
             print('Invalid input, please try again...')
             continue

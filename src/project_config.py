@@ -4,9 +4,12 @@ TEMP_FOLDER = 'temp'
 ARCHIVE_FOLDER = 'archive'
 RESULTS_FOLDER = 'results'
 MAX_FILE_LINE = 50000
-mapper = {
+MAPPER = {
     'Station': {
         'Changi': '0',
         'Paya Lebar': '1'
     }
 }
+ZONE_MAP_COLS = (
+    'Timestamp',
+)

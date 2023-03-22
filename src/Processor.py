@@ -4,18 +4,17 @@ from project_config import (
     ARCHIVE_FOLDER,
     MAX_FILE_LINE
 )
-# from functools import reduce
 from datetime import datetime
-from typing import List, Dict
+from typing import List, Dict, Tuple
 import os
 
 
 class Processor:
     def __init__(
         self,
-        required_years: str,
+        required_years: int,
         location: str,
-        zone_maps: Dict[str, Dict[int, Dict]]
+        zone_maps: Dict[str, List[Tuple[int, int]]]
     ) -> None:
         self.required_years = required_years
         self.location = location
@@ -24,7 +23,7 @@ class Processor:
     def process_month_and_year(self) -> None:
         """Filters through timestamps and stores the indexes"""
         years = [year for year in range(2002, 2022)
-                 if year % 10 == int(self.required_years)]
+                 if year % 10 == self.required_years]
         for year in years:
             dt_to_check = f'{year}-01-01 00:00'
             zone = self.find_zone(dt_to_check=dt_to_check)
@@ -48,7 +47,8 @@ class Processor:
         opened_files: List,
         dt_to_check: str = None,
     ) -> None:
-        if zone > max(self.zone_maps['Timestamp'].keys()):
+        """After finding the correct zone, get correct timestamps and write to file"""
+        if zone >= len(self.zone_maps['Timestamp']):
             return
         with open(f'{SPLIT_DATA_FOLDER}/Timestamp_{zone}.txt', 'r') as f:
             lines = f.read().splitlines()
@@ -59,12 +59,12 @@ class Processor:
                 lines=lines
             )
         jump = MAX_FILE_LINE * zone
-        for idx in range(lowest_idx, lowest_idx + len(lines)):
+        for idx in range(lowest_idx, len(lines)):
             line = lines[idx]
             if int(line[:4]) != year:
                 break
             month = int(line[5:7])
-            opened_files[month - 1].write(f'{jump + idx}\n')
+            opened_files[month - 1].write(f'{line.split()[0]} {jump + idx}\n')
         else:
             self.write_to_file_from_zone(
                 zone=zone + 1,
@@ -76,17 +76,17 @@ class Processor:
         return
 
     def find_zone(self, dt_to_check: datetime) -> int:
-        for zone, min_and_max in self.zone_maps['Timestamp'].items():
-            min_value, max_value = min_and_max
+        """Compares the range of each zone map and finds the zone the date is in"""
+        for zone, (min_value, max_value) in enumerate(self.zone_maps['Timestamp']):
             if min_value <= dt_to_check <= max_value:
                 return zone
         return -1
 
     def process_location(self) -> None:
-        """Iterates through files in temp folder and filters and stores indexes"""
+        """Stores positions with correct location"""
         current_files = ['/'.join([TEMP_FOLDER, f])
                          for f in os.listdir(TEMP_FOLDER)]
-        for zone in self.zone_maps['Timestamp'].keys():
+        for zone in range(len(self.zone_maps['Timestamp'])):
             with open(f'{SPLIT_DATA_FOLDER}/Station_{zone}.txt', 'r') as f:
                 station_data = f.read().splitlines()
                 range_min = MAX_FILE_LINE * zone
@@ -99,17 +99,16 @@ class Processor:
                 if col != 'Timestamp':
                     continue
                 # will read in a list of indexes
-                with open(file, 'r') as f:
-                    timestamp_data = list(map(int, f.read().splitlines()))
-                # if no overlap between zone and indexes, skip to next file
-                if min(timestamp_data) > range_max or max(timestamp_data) < range_min:
-                    continue
-                station_ok = [idx for idx in timestamp_data
-                              if idx in range(range_min, range_max + 1)
-                              if station_data[idx - range_min] == self.location]
-                with open(f'{TEMP_FOLDER}/Station_{remainder}', 'a') as f:
-                    for idx in station_ok:
-                        f.write(f'{idx}\n')
+                station_file = f'{TEMP_FOLDER}/Station_{remainder}'
+                with open(file, 'r') as f1, open(station_file, 'a') as f2:
+                    for line in f1:
+                        timestamp_date, timestamp_idx = line.rstrip().rsplit(' ', 1)
+                        # if no overlap between zone and indexes, skip to next file
+                        timestamp_idx = int(timestamp_idx)
+                        if timestamp_idx not in range(range_min, range_max + 1):
+                            continue
+                        if station_data[timestamp_idx - range_min] == self.location:
+                            f2.write(f'{timestamp_date} {timestamp_idx}\n')
         # move timestamp temp file to archive
         folder = f'{ARCHIVE_FOLDER}/Timestamp'
         if not os.path.exists(folder):
@@ -120,12 +119,13 @@ class Processor:
             os.rename(file, new_file_path)
         return
 
+    def process_temperature_and_humidity(self) -> None:
+        """Reads in files in temp folder, stores results in a file in results folder"""
+        pass
 
-# def get_max_index(file_name: str) -> int:
-#     f = open(file_name, 'r')
-#     return reduce(lambda a, b: min(a, b), f.read().splitlines())
 
-def binary_search(dt_to_check: str, lines: List) -> int:
+def binary_search(dt_to_check: str, lines: List[str]) -> int:
+    """Binary search to find smallest position of record in current month"""
     left, right = 0, len(lines) - 1
     while left <= right:
         mid = (left + right) // 2
@@ -136,4 +136,4 @@ def binary_search(dt_to_check: str, lines: List) -> int:
             left = mid + 1
         else:
             right = mid - 1
-    return 0
+    return left
