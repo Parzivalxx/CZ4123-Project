@@ -14,6 +14,8 @@ from typing import List, Dict, Tuple
 from Processor import Processor
 
 
+# TEST SOMETHING
+
 def get_columns(data_file: str) -> List:
     """Gets header columns in file"""
     return open(data_file, 'r').readline().rstrip().split(',')
