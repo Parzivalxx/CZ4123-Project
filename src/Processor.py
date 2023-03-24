@@ -133,120 +133,126 @@ class Processor:
         return
 
     def process_temperature_and_humidity(self, matric_num) -> None:
-        """Reads in files in temp folder, stores results in a file in results folder"""
         file_name = "ScanResult_" + matric_num
-        current_files = ['/'.join([TEMP_FOLDER, f])
-                         for f in os.listdir(TEMP_FOLDER)]
+        current_files = ['/'.join([TEMP_FOLDER, f]) for f in os.listdir(TEMP_FOLDER)]
         station = "Paya Lebar" if self.location == "1" else "Changi"
-
         maxTempRes, minTempRes, maxHumidRes, minHumidRes = [], [], [], []
         for file in current_files:
-            minTemp = float("inf")
-            minTempList = []
-            minTempDate = set()
-
-            maxTemp = float("-inf")
-            maxTempList = []
-            maxTempDate = set()
-
-            minHumid = float("inf")
-            minHumidList = []
-            minHumidDate = set()
-
-            maxHumid = float("-inf")
-            maxHumidList = []
-            maxHumidDate = set()
+            minTemp, minTempList, minTempDate = float("inf"), [], set()
+            maxTemp, maxTempList, maxTempDate = float("-inf"), [], set()
+            minHumid, minHumidList, minHumidDate = float("inf"), [], set()
+            maxHumid, maxHumidList, maxHumidDate = float("-inf"), [], set()
             with open(file, 'r') as f1:
                 station_data = f1.read().splitlines()
-
                 # Skip to next intermediate file if current file is empty
                 if not station_data:
                     continue
-
                 station_data = list(map(split_timestamp, station_data))
-
                 for zone, min_max_dict in enumerate(self.zone_maps['Temperature']):
                     min_idx = min_max_dict['min_idx']
                     max_idx = min_max_dict['max_idx']
                     starting_idx = station_data[0][1]
                     ending_idx = station_data[-1][1]
-                    # if no overlap between zone and indexes, skip to next file
+
                     if starting_idx > max_idx:
                         continue
-                    # finish reading all the indexes in the current file
                     if ending_idx < min_idx:
                         break
 
-                    # temperature vector
                     with open(f'{SPLIT_DATA_FOLDER}/Temperature_{zone}.txt', 'r') as f:
                         temperature_data = f.read().splitlines()
-                    # humidity vector
                     with open(f'{SPLIT_DATA_FOLDER}/Humidity_{zone}.txt', 'r') as f:
                         humidity_data = f.read().splitlines()
 
                     for station_date, station_idx in station_data:
                         if station_idx not in range(min_idx, max_idx + 1):
                             continue
-                        
-                        # min temp
-                        if temperature_data[station_idx - min_idx] != 'M' and float(temperature_data[station_idx - min_idx]) < minTemp:
-                            minTemp = float(temperature_data[station_idx - min_idx]) # update minTemp variable
-                            minTempList = [[station_date, station, "Min Temperature", minTemp]] # reset
-                            minTempDate = set() # reset set
+                        currentTemp = temperature_data[station_idx - min_idx]
+                        currentHumidity = humidity_data[station_idx - min_idx]
+
+                        if (currentTemp != 'M' and float(currentTemp) < minTemp):
+                            minTemp = float(currentTemp)
+                            minTempList = [[station_date, station,
+                                            "Min Temperature", minTemp]]
+                            minTempDate = set()
                             minTempDate.add(station_date)
-                        elif temperature_data[station_idx - min_idx] != 'M' and float(temperature_data[station_idx - min_idx]) == minTemp and station_date not in minTempDate:
-                                minTempList.append([station_date, station, "Min Temperature", minTemp]) # append minTempList
-                                minTempDate.add(station_date)
-                        
-                        # max temp
-                        if temperature_data[station_idx - min_idx] != 'M' and float(temperature_data[station_idx - min_idx]) > maxTemp:
-                            maxTemp = float(temperature_data[station_idx - min_idx]) # update minTemp variable
-                            maxTempList = [[station_date, station, "Max Temperature", maxTemp]] # reset
-                            maxTempDate = set() # reset set
+                        elif (currentTemp != 'M' and float(currentTemp) == minTemp and
+                                station_date not in minTempDate):
+                            minTempList.append([station_date, station,
+                                                "Min Temperature", minTemp])
+                            minTempDate.add(station_date)
+                        if (currentTemp != 'M' and float(currentTemp) > maxTemp):
+                            maxTemp = float(currentTemp)
+                            maxTempList = [[station_date, station,
+                                            "Max Temperature", maxTemp]]
+                            maxTempDate = set()
                             maxTempDate.add(station_date)
-                        elif temperature_data[station_idx - min_idx] != 'M' and float(temperature_data[station_idx - min_idx]) == maxTemp and station_date not in maxTempDate:
-                            maxTempList.append([station_date, station, "Max Temperature", maxTemp]) # append minTempList
+                        elif (currentTemp != 'M' and float(currentTemp) == maxTemp and
+                                station_date not in maxTempDate):
+                            maxTempList.append([station_date, station,
+                                                "Max Temperature", maxTemp])
                             maxTempDate.add(station_date)
-                        
-                        # min humidity
-                        if humidity_data[station_idx - min_idx] != 'M' and float(humidity_data[station_idx - min_idx]) < minHumid:
-                            minHumid = float(humidity_data[station_idx - min_idx]) # update minTemp variable
-                            minHumidList = [[station_date, station, "Min Humidity", minHumid]] # reset
-                            minHumidDate = set() # reset set
+                        if (currentHumidity != 'M' and
+                                float(currentHumidity) < minHumid):
+                            minHumid = float(currentHumidity)
+                            minHumidList = [[station_date, station,
+                                             "Min Humidity", minHumid]]
+                            minHumidDate = set()
                             minHumidDate.add(station_date)
-                        elif humidity_data[station_idx - min_idx] != 'M' and float(humidity_data[station_idx - min_idx]) == minHumid and station_date not in minHumidDate:
-                            minHumidList.append([station_date, station, "Min Humidity", minHumid]) # append minTempList
+                        elif (currentHumidity != 'M' and
+                              float(currentHumidity) == minHumid and
+                              station_date not in minHumidDate):
+                            minHumidList.append([station_date, station,
+                                                 "Min Humidity", minHumid])
                             minHumidDate.add(station_date)
-                        
-                        # max humidity
-                        if humidity_data[station_idx - min_idx] != 'M' and float(humidity_data[station_idx - min_idx]) > maxHumid:
-                            maxHumid = float(humidity_data[station_idx - min_idx]) # update minTemp variable
-                            maxHumidList = [[station_date, station, "Max Humidity", maxHumid]] # reset
-                            maxHumidDate = set() # reset set
+                        if (currentHumidity != 'M' and
+                                float(currentHumidity) > maxHumid):
+                            maxHumid = float(currentHumidity)
+                            maxHumidList = [[station_date, station,
+                                             "Max Humidity", maxHumid]]
+                            maxHumidDate = set()
                             maxHumidDate.add(station_date)
-                        elif humidity_data[station_idx - min_idx] != 'M' and float(humidity_data[station_idx - min_idx]) == maxHumid and station_date not in maxHumidDate:
-                            maxHumidList.append([station_date, station, "Max Humidity", maxHumid]) # append minTempList
+                        elif (currentHumidity != 'M' and
+                              float(currentHumidity) == maxHumid and
+                              station_date not in maxHumidDate):
+                            maxHumidList.append([station_date, station,
+                                                 "Max Humidity", maxHumid])
                             maxHumidDate.add(station_date)
- 
             minTempRes.append(minTempList)
             maxTempRes.append(maxTempList)
             minHumidRes.append(minHumidList)
             maxHumidRes.append(maxHumidList)
-        
-        with open(f'{RESULTS_FOLDER}/{file_name}.csv', 'w', newline='') as csvfile:
-            csvwriter = csv.writer(csvfile)
-            col_name = [['Date', 'Station', 'Category', 'Value']]
-            csvwriter.writerows(col_name) # write col name
-            for i in minTempRes:
-                csvwriter.writerows(i)
-            for i in maxTempRes:
-                csvwriter.writerows(i)
-            for i in minHumidRes:
-                csvwriter.writerows(i)
-            for i in maxHumidRes:
-                csvwriter.writerows(i)
-           
+
+        write_results(
+                fileName=file_name,
+                minTempRes=minTempRes,
+                maxTempRes=maxTempRes,
+                minHumidRes=minHumidRes,
+                maxHumidRes=maxHumidRes
+        )
         return
+
+
+def write_results(
+    fileName: str,
+    minTempRes: List[list],
+    maxTempRes: List[list],
+    minHumidRes: List[list],
+    maxHumidRes: List[list]
+) -> None:
+    with open(f'{RESULTS_FOLDER}/{fileName}.csv', 'w', newline='') as csvfile:
+        csvwriter = csv.writer(csvfile)
+        col_name = [['Date', 'Station', 'Category', 'Value']]
+        csvwriter.writerows(col_name)  # write col name
+        for i in minTempRes:
+            csvwriter.writerows(i)
+        for i in maxTempRes:
+            csvwriter.writerows(i)
+        for i in minHumidRes:
+            csvwriter.writerows(i)
+        for i in maxHumidRes:
+            csvwriter.writerows(i)
+    return
 
 
 def binary_search(dt_to_check: str, lines: List[str]) -> int:
