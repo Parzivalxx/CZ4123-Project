@@ -12,4 +12,7 @@ MAPPER = {
 }
 ZONE_MAP_COLS = (
     'Timestamp',
+    'Station',
+    'Temperature',
+    'Humidity'
 )

@@ -48,7 +48,9 @@ class Processor:
         dt_to_check: str = None,
     ) -> None:
         """After finding the correct zone, get correct timestamps and write to file"""
-        if zone >= len(self.zone_maps['Timestamp']):
+        if not self.zone_maps:
+            return
+        if zone >= len(list(self.zone_maps.values())[0]):
             return
         with open(f'{SPLIT_DATA_FOLDER}/Timestamp_{zone}.txt', 'r') as f:
             lines = f.read().splitlines()
@@ -77,8 +79,10 @@ class Processor:
 
     def find_zone(self, dt_to_check: datetime) -> int:
         """Compares the range of each zone map and finds the zone the date is in"""
-        for zone, (min_value, max_value) in enumerate(self.zone_maps['Timestamp']):
-            if min_value <= dt_to_check <= max_value:
+        for zone, min_max_dict in enumerate(self.zone_maps['Timestamp']):
+            min_date = min_max_dict['min_date']
+            max_date = min_max_dict['max_date']
+            if min_date <= dt_to_check <= max_date:
                 return zone
         return -1
 
@@ -86,28 +90,35 @@ class Processor:
         """Stores positions with correct location"""
         current_files = ['/'.join([TEMP_FOLDER, f])
                          for f in os.listdir(TEMP_FOLDER)]
-        for zone in range(len(self.zone_maps['Timestamp'])):
-            with open(f'{SPLIT_DATA_FOLDER}/Station_{zone}.txt', 'r') as f:
-                station_data = f.read().splitlines()
-                range_min = MAX_FILE_LINE * zone
-                range_max = range_min + len(station_data) - 1
-            for file in current_files:
-                filename = file.split('/')[-1]
-                underscore_idx = filename.find('_')
-                col = filename[:underscore_idx]
-                remainder = filename[underscore_idx + 1:]
-                if col != 'Timestamp':
-                    continue
-                # will read in a list of indexes
-                station_file = f'{TEMP_FOLDER}/Station_{remainder}'
-                with open(file, 'r') as f1, open(station_file, 'a') as f2:
-                    for line in f1:
-                        timestamp_date, timestamp_idx = line.rstrip().rsplit(' ', 1)
-                        # if no overlap between zone and indexes, skip to next file
-                        timestamp_idx = int(timestamp_idx)
-                        if timestamp_idx not in range(range_min, range_max + 1):
+        for file in current_files:
+            filename = file.split('/')[-1]
+            underscore_idx = filename.find('_')
+            col = filename[:underscore_idx]
+            remainder = filename[underscore_idx + 1:]
+            if col != 'Timestamp':
+                continue
+            # will read in a list of indexes
+            station_file = f'{TEMP_FOLDER}/Station_{remainder}'
+            with open(file, 'r') as f1, open(station_file, 'a') as f2:
+                timestamp_data = f1.read().splitlines()
+                timestamp_data = list(map(split_timestamp, timestamp_data))
+                for zone, min_max_dict in enumerate(self.zone_maps['Station']):
+                    min_idx = min_max_dict['min_idx']
+                    max_idx = min_max_dict['max_idx']
+                    starting_idx = timestamp_data[0][1]
+                    ending_idx = timestamp_data[-1][1]
+                    # if no overlap between zone and indexes, skip to next file
+                    if starting_idx > max_idx:
+                        continue
+                    # if exceeded, break
+                    if ending_idx < min_idx:
+                        break
+                    with open(f'{SPLIT_DATA_FOLDER}/Station_{zone}.txt', 'r') as f:
+                        station_data = f.read().splitlines()
+                    for timestamp_date, timestamp_idx in timestamp_data:
+                        if timestamp_idx not in range(min_idx, max_idx + 1):
                             continue
-                        if station_data[timestamp_idx - range_min] == self.location:
+                        if station_data[timestamp_idx - min_idx] == self.location:
                             f2.write(f'{timestamp_date} {timestamp_idx}\n')
         # move timestamp temp file to archive
         folder = f'{ARCHIVE_FOLDER}/Timestamp'
@@ -137,3 +148,9 @@ def binary_search(dt_to_check: str, lines: List[str]) -> int:
         else:
             right = mid - 1
     return left
+
+
+def split_timestamp(s: str) -> Tuple[str, int]:
+    date_and_idx = s.rstrip().split()
+    date_and_idx[1] = int(date_and_idx[1])
+    return date_and_idx
