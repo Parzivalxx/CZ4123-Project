@@ -5,7 +5,6 @@ from project_config import (
     DATA_FILE,
     TEMP_FOLDER,
     ARCHIVE_FOLDER,
-    RESULTS_FOLDER,
     MAX_FILE_LINE,
     MAPPER,
     ZONE_MAP_COLS
@@ -119,7 +118,7 @@ def process_data(
     matric_num: str
 ) -> None:
     """Uses required years and location to churn out a resulting csv"""
-    folders = [TEMP_FOLDER, ARCHIVE_FOLDER, RESULTS_FOLDER]
+    folders = [TEMP_FOLDER, ARCHIVE_FOLDER]
     recreate_folders(folders=folders)
     print('Processing data...')
     processor = Processor(
@@ -162,20 +161,13 @@ def main() -> None:
         except ValueError:
             print('Invalid input, please try again...')
             continue
-        if location % 2:
-            process_data(
-                required_years=required_years,
-                location='1',
-                zone_maps=zone_maps,
-                matric_num=matric_num
-            )
-        else:
-            process_data(
-                required_years=required_years,
-                location='0',
-                zone_maps=zone_maps,
-                matric_num=matric_num
-            )
+        location = '1' if location % 2 else '0'
+        process_data(
+            required_years=required_years,
+            location=location,
+            zone_maps=zone_maps,
+            matric_num=matric_num
+        )
 
 
 if __name__ == '__main__':
