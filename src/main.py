@@ -60,7 +60,7 @@ def split_columns(data_file: str, zone_maps: Dict) -> None:
                 file.write(f'{c}\n')
             i += 1
     for col in min_max_dict:
-        min_max_dict[col]['max_idx'] = i
+        min_max_dict[col]['max_idx'] = i - 1
     zone_maps, min_max_dict = store_in_zone_map(
         min_max_dict=min_max_dict,
         zone_maps=zone_maps
@@ -129,7 +129,7 @@ def process_data(
     )
     processor.process_month_and_year()
     processor.process_location()
-    processor.process_temperature_and_humidity(matric_num) # getting results here
+    processor.process_temperature_and_humidity(matric_num)  # getting results here
 
 
 def main() -> None:
