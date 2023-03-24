@@ -28,7 +28,11 @@ def split_columns(data_file: str, zone_maps: Dict) -> None:
         next(f)
         min_max_dict = initialize_min_max_dict(zone_maps=zone_maps)
         curr_zone = 0
-        for i, line in enumerate(f):
+        i = 0
+        for line in f:
+            if i % MAX_FILE_LINE == MAX_FILE_LINE - 1:
+                for col in min_max_dict:
+                    min_max_dict[col]['max_idx'] = i
             if i % MAX_FILE_LINE == 0:
                 if opened_files:
                     # store in map and reset min_max_dict
@@ -37,6 +41,8 @@ def split_columns(data_file: str, zone_maps: Dict) -> None:
                         zone_maps=zone_maps
                     )
                     close_files(opened_files=opened_files)
+                for col in min_max_dict:
+                    min_max_dict[col]['min_idx'] = i
                 opened_files = [
                     open(f'{SPLIT_DATA_FOLDER}/{col}_{curr_zone}.txt', 'w')
                     for col in columns
@@ -46,12 +52,15 @@ def split_columns(data_file: str, zone_maps: Dict) -> None:
             for file, c, col in zip(opened_files, content, columns):
                 if col in MAPPER:
                     c = MAPPER[col][c]
-                if col in zone_maps:
-                    min_val, max_val = min_max_dict[col]
-                    min_val = min(min_val, c)
-                    max_val = max(max_val, c)
-                    min_max_dict[col] = [min_val, max_val]
+                if col == 'Timestamp':
+                    min_date = min_max_dict[col]['min_date']
+                    max_date = min_max_dict[col]['max_date']
+                    min_max_dict[col]['min_date'] = min(min_date, c)
+                    min_max_dict[col]['max_date'] = max(max_date, c)
                 file.write(f'{c}\n')
+            i += 1
+    for col in min_max_dict:
+        min_max_dict[col]['max_idx'] = i
     zone_maps, min_max_dict = store_in_zone_map(
         min_max_dict=min_max_dict,
         zone_maps=zone_maps
@@ -73,9 +82,16 @@ def initialize_min_max_dict(zone_maps: Dict) -> Dict:
     min_date_str = '9999-01-01 00:00'
     max_date_str = '0001-01-01 00:00'
     min_max_dict = {
-        col: [min_date_str, max_date_str]
+        col: {
+            'min_idx': float('inf'),
+            'max_idx': -float('inf')
+        }
         for col in zone_maps
     }
+    if 'Timestamp' in zone_maps:
+        min_max_dict['Timestamp']['min_date'] = min_date_str
+        min_max_dict['Timestamp']['max_date'] = max_date_str
+
     return min_max_dict
 
 
@@ -85,10 +101,8 @@ def store_in_zone_map(
 ) -> Tuple[Dict, Dict]:
     """Store the current min and max in the zone map and reinitialize the min and max"""
     for col in zone_maps:
-        zone_maps[col].append(tuple(min_max_dict[col]))
-        min_date_str = '9999-01-01 00:00'
-        max_date_str = '0001-01-01 00:00'
-        min_max_dict[col] = [min_date_str, max_date_str]
+        zone_maps[col].append(min_max_dict[col])
+    min_max_dict = initialize_min_max_dict(zone_maps=zone_maps)
     return zone_maps, min_max_dict
 
 

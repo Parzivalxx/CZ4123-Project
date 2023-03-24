@@ -1,2 +1,6 @@
 venv
 **__pycache__**
+archive/
+results/
+split_data/
+temp/
