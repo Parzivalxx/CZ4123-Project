@@ -115,7 +115,8 @@ def close_files(opened_files: List) -> None:
 def process_data(
     required_years: str,
     location: str,
-    zone_maps: Dict
+    zone_maps: Dict,
+    matric_num: str
 ) -> None:
     """Uses required years and location to churn out a resulting csv"""
     folders = [TEMP_FOLDER, ARCHIVE_FOLDER, RESULTS_FOLDER]
@@ -128,7 +129,7 @@ def process_data(
     )
     processor.process_month_and_year()
     processor.process_location()
-    processor.process_temperature_and_humidity() # getting results here
+    processor.process_temperature_and_humidity(matric_num) # getting results here
 
 
 def main() -> None:
@@ -165,13 +166,15 @@ def main() -> None:
             process_data(
                 required_years=required_years,
                 location='1',
-                zone_maps=zone_maps
+                zone_maps=zone_maps,
+                matric_num=matric_num
             )
         else:
             process_data(
                 required_years=required_years,
                 location='0',
-                zone_maps=zone_maps
+                zone_maps=zone_maps,
+                matric_num=matric_num
             )
 
 

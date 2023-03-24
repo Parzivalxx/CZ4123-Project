@@ -8,3 +8,5 @@ Steps to get started:
 <li>pre-commit install</li>
 <li>python src/main.py</li>
 </ol>
+
+Before running python src/main.py, close all files in archive, split_data, temp and results folder
