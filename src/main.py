@@ -14,8 +14,6 @@ from typing import List, Dict, Tuple
 from Processor import Processor
 
 
-# TEST SOMETHING
-
 def get_columns(data_file: str) -> List:
     """Gets header columns in file"""
     return open(data_file, 'r').readline().rstrip().split(',')
@@ -116,6 +114,7 @@ def process_data(
     )
     processor.process_month_and_year()
     processor.process_location()
+    processor.process_temperature_and_humidity() # getting results here
 
 
 def main() -> None:

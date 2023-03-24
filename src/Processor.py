@@ -119,9 +119,70 @@ class Processor:
             os.rename(file, new_file_path)
         return
 
+    # Approach:
+        # 1) read each file
+        # 2) for each file, read every zone for the data (Probably the reason why its so slow lelel)
     def process_temperature_and_humidity(self) -> None:
         """Reads in files in temp folder, stores results in a file in results folder"""
-        pass
+        current_files = ['/'.join([TEMP_FOLDER, f])
+                         for f in os.listdir(TEMP_FOLDER)]
+        
+        station = "Paya Lebar" if self.location == "1" else "Changi"
+        maxTempRes = []
+        minTempRes = []
+
+        for file in current_files:
+            minTemp = float("inf")
+            maxTemp = float("-inf")
+            minTempList = []
+            maxTempList = []
+
+            with open(file, 'r') as f1:
+                print("opening: ", file)
+                for line in f1:
+                    station_date, station_idx = line.rstrip().rsplit(' ', 1)
+                    station_idx = int(station_idx)
+
+                    for zone in range(len(self.zone_maps['Timestamp'])):
+                        with open(f'{SPLIT_DATA_FOLDER}/Temperature_{zone}.txt', 'r') as f:
+                            temperature_data = f.read().splitlines()
+                            range_min = MAX_FILE_LINE * zone
+                            range_max = range_min + len(temperature_data) - 1
+                            if station_idx not in range(range_min, range_max + 1):
+                                continue
+                            
+                            #print(float(temperature_data[station_idx - range_min]))
+
+                            # if temperature lower than min temp
+                            if float(temperature_data[station_idx - range_min]) < minTemp:
+                                minTemp = float(temperature_data[station_idx - range_min]) # update minTemp variable
+                                minTempList = [(station_date, station, "Min Temperature", minTemp)] # reset minTempList
+                            # if temperature equal to current min temp
+                            elif float(temperature_data[station_idx - range_min]) == minTemp:
+                                minTempList.append((station_date, station, "Min Temperature", minTemp)) # append minTempList
+                            
+                            # if temperature higher than min temp
+                            if float(temperature_data[station_idx - range_min]) > maxTemp:
+                                maxTemp = float(temperature_data[station_idx - range_min]) # update minTemp variable
+                                maxTempList = [(station_date, station, "Max Temperature", maxTemp)] # reset maxTempList
+                            # if temperature equal to current min temp
+                            elif float(temperature_data[station_idx - range_min]) == maxTemp:
+                                maxTempList.append((station_date, station, "Max Temperature", maxTemp)) # append minTempList
+            
+            """Writing results for each month in minTempList and maxTemplist, can actually just write straight to results.csv instead of minTempRes and maxTempRes"""
+            if minTempList:
+                minTempRes.append(minTempList)
+            
+            if maxTempList:
+                maxTempRes.append(maxTempList)
+        
+        # printing to check
+        for i in minTempRes:
+            print(i)
+
+        for i in maxTempRes:
+            print(i)
+        return
 
 
 def binary_search(dt_to_check: str, lines: List[str]) -> int:
