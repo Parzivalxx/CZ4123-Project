@@ -4,3 +4,6 @@ archive/
 results/
 split_data/
 temp/
+*.ipynb
+*.ipynb_checkpoints
+*.jovianrc
