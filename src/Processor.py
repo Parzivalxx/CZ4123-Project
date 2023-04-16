@@ -5,7 +5,6 @@ from project_config import (
     MAX_FILE_LINE,
     RESULTS_FOLDER
 )
-from datetime import datetime
 from typing import List, Dict, Tuple, Set, Union
 import os
 import csv
@@ -79,7 +78,7 @@ class Processor:
             file.close()
         return
 
-    def find_zone(self, dt_to_check: datetime) -> int:
+    def find_zone(self, dt_to_check: str) -> int:
         """Compares the range of each zone map and finds the zone the date is in"""
         for zone, min_max_dict in enumerate(self.zone_maps['Timestamp']):
             min_date = min_max_dict['min_date']
